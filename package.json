@@ -1,0 +1,43 @@
+{
+  "name": "@grovekit/homie-client",
+  "version": "0.0.1-alpha.3",
+  "description": "A GroveKit library for publishing and interacting with devices implementing the Homie MQTT convention.",
+  "main": "dist/index.js",
+  "type": "module",
+  "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "test": "node --test dist/**/*.test.js",
+    "ts:clean": "rm -rf ./dist && rm -f ./tsconfig.tsbuildinfo",
+    "ts:build": "npm run ts:clean && tsc",
+    "ts:watch": "npm run ts:clean && tsc --watch",
+    "build": "npm run ts:build"
+  },
+  "author": "Jacopo Scazzosi <jacopo@scazzosi.com>",
+  "license": "MIT",
+  "homepage": "https://github.com/grovekit/homie-client",
+  "bugs": "https://github.com/grovekit/homie-client/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/grovekit/homie-client.git"
+  },
+  "dependencies": {
+    "@deepkit/type": "^1.0.19",
+    "@grovekit/homie-core": "^0.0.1-alpha.3",
+    "@seriousme/opifex": "^1.11.1",
+    "debug": "^4.4.3"
+  },
+  "devDependencies": {
+    "@deepkit/type-compiler": "^1.0.19",
+    "@types/debug": "^4.1.12",
+    "@types/node": "^24.7.2",
+    "typescript": "^5.9.3"
+  },
+  "files": [
+    "dist/**/*.js",
+    "dist/**/*.d.ts",
+    "!dist/examples/**/*.*"
+  ]
+}
