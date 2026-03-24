@@ -10,7 +10,10 @@ export class DatetimeProperty extends Property<Date> {
 
   _parse(raw: string) {
     const value = new Date(raw);
-    return value;
+    if (!Number.isNaN(value.getTime())) {
+      return value;
+    }
+    return undefined;
   }
 
   _serialize(value: Date) {
