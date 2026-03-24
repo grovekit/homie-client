@@ -10,9 +10,8 @@ export class BooleanProperty extends Property<boolean> {
   }
 
   _parse(raw: string) {
-    const lower = raw.toLowerCase();
-    if (lower === STRING.TRUE) return true;
-    if (lower === STRING.FALSE) return false;
+    if (raw === STRING.TRUE) return true;
+    if (raw === STRING.FALSE) return false;
     return undefined;
   }
 
