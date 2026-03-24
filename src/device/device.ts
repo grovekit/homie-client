@@ -74,8 +74,10 @@ export class Device {
   }
 
   $_getDescription() {
+    const isRoot = this._root as Device === this;
     return {
       ...this.#info,
+      root: isRoot ? undefined : this._root.id,
       nodes: mapObjectValues(this._nodes, node => node.$_getDescription()),
       parent: this.#parent?.id,
       children: Object.keys(this._children),
