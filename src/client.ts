@@ -189,12 +189,12 @@ export class HomieClient {
 
   }
 
-  async publishPropertyValue(parsed: PropertyValueTopic, value: RawValue) {
+  async publishPropertyValue(parsed: PropertyValueTopic, value: RawValue, retained: boolean = true) {
     await this.#publish({
       topic: TOPIC.stringify(parsed),
       payload: Buffer.from(value),
-      qos: 2,
-      retain: true,
+      qos: retained ? 2 : 0,
+      retain: retained,
     });
   }
 

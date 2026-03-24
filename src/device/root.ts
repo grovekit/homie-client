@@ -75,6 +75,7 @@ export class HomieRootDevice extends Device {
     await this.#client.publishPropertyValue(
       { type: 'property_value', prefix: this.#prefix, device: device.id, node: node.id, property: property.id },
       raw as RawValue,
+      property.retained,
     );
   }
 
