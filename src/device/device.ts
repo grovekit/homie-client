@@ -95,7 +95,6 @@ export class Device {
   }
 
   async $_advertise() {
-    await this._root._publishDeviceState(this, this._state);
     await this._root._publishDeviceDescription(this);
     for (const node of Object.values(this._nodes)) {
       await node.$_advertise();
@@ -103,6 +102,7 @@ export class Device {
     for (const child of Object.values(this._children)) {
       await child.$_advertise();
     }
+    await this._root._publishDeviceState(this, this._state);
   }
 
 }
