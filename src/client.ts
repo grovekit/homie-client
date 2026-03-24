@@ -150,8 +150,8 @@ export class HomieClient {
     await this.#publish({
       topic: TOPIC.stringify(parsed),
       payload: Buffer.from(message),
-      qos: 0,
-      retain: false,
+      qos: 2,
+      retain: true,
     });
   }
 
