@@ -28,7 +28,11 @@ export class FloatProperty extends Property<number> {
   }
 
   _parse(raw: string) {
-    return parseFloat(raw);
+    const value = parseFloat(raw);
+    if (!Number.isNaN(value)) {
+      return value;
+    }
+    return undefined;
   }
 
   _serialize(value: number) {
