@@ -10,10 +10,12 @@ export class HomieRootDevice extends Device {
 
   #prefix: string;
   #client: HomieClient;
+  #devices: Map<string, Device>;
 
   constructor(id: string, info: Omit<DeviceInfo, 'homie'>, opts: HomieClientOpts, prefix?: string) {
     super(id, info);
     this.#prefix = prefix ?? 'homie';
+    this.#devices = new Map();
     this.#client = new HomieClient({
       ...opts,
       options: {
@@ -46,7 +48,10 @@ export class HomieRootDevice extends Device {
   }
 
   _registerDevice(device: Device) {
-
+    if (this.#devices.has(device.id)) {
+      throw new Error(`duplicate device ID "${device.id}"`);
+    }
+    this.#devices.set(device.id, device);
   }
 
   _registerNode(node: Node) {
@@ -62,7 +67,7 @@ export class HomieRootDevice extends Device {
     if (value === STRING.NULL) {
       return;
     }
-    const device = parsed.device === this.id ? this : this._children[parsed.device];
+    const device = this.#devices.get(parsed.device);
     const property = device?._nodes[parsed.node]?._properties[parsed.property];
     if (property?.settable) {
       await property.$_handleSet(value);
