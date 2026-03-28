@@ -3,7 +3,7 @@ import { Property, PropertyInfo } from "../property/property.js";
 import { HomieRootDevice } from "../device/root.js";
 import { Device } from "../device/device.js";
 import { validateId } from "../utils.js";
-import { BooleanProperty } from "../property/boolean.js";
+import { BooleanProperty, BooleanFormat } from "../property/boolean.js";
 import { StringProperty } from "../property/string.js";
 import { IntegerProperty, IntegerFormat } from "../property/integer.js";
 import { FloatProperty, FloatFormat } from "../property/float.js";
@@ -57,8 +57,8 @@ export class Node {
     return property;
   }
 
-  addBooleanProperty(id: string, info: PropertyInfo, value: boolean) {
-    const property = new BooleanProperty(id, info, value, this);
+  addBooleanProperty(id: string, info: PropertyInfo, value: boolean, format?: BooleanFormat) {
+    const property = new BooleanProperty(id, info, value, this, format);
     this.#addProperty(property);
     return property;
   }
