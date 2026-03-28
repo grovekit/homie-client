@@ -1,7 +1,21 @@
-
 import { Node } from "../node/node.js";
 import { DATATYPE, Property, PropertyInfo } from "./property.js";
 import { STRING } from "@grovekit/homie-core";
+
+/**
+ * Maximum allowed string length per the Homie spec.
+ * "String types are limited to 268,435,456 characters"
+ */
+export const MAX_STRING_LENGTH = 268_435_456;
+
+/**
+ * Validates a string value per the Homie spec.
+ * - Must be a string type.
+ * - Must not exceed 268,435,456 characters.
+ */
+export const validateString = (value: any): value is string => {
+  return typeof value === 'string' && value.length <= MAX_STRING_LENGTH;
+};
 
 export class StringProperty extends Property<string> {
 
@@ -18,7 +32,7 @@ export class StringProperty extends Property<string> {
   }
 
   _validate(value: any): value is string {
-    return typeof value === 'string';
+    return validateString(value);
   }
 
 };
