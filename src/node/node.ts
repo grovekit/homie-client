@@ -2,6 +2,7 @@
 import { Property, PropertyInfo } from "../property/property.js";
 import { HomieRootDevice } from "../device/root.js";
 import { Device } from "../device/device.js";
+import { validateId } from "../utils.js";
 import { BooleanProperty } from "../property/boolean.js";
 import { StringProperty } from "../property/string.js";
 import { IntegerProperty, IntegerFormat } from "../property/integer.js";
@@ -27,6 +28,7 @@ export class Node {
   readonly _properties: Record<string, Property<any>> = {};
 
   constructor(id: string, info: NodeInfo, device: Device) {
+    validateId(id, 'node id');
     this.#id = id;
     this.#info = { ...info };
     this._root = device._root;

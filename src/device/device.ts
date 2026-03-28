@@ -1,7 +1,7 @@
 
 import { HomieRootDevice } from './root.js';
 import { Node, NodeInfo } from '../node/node.js';
-import { mapObjectValues } from '../utils.js';
+import { mapObjectValues, validateId } from '../utils.js';
 import { DEVICE_STATE, LOG_LEVEL } from '@grovekit/homie-core';
 
 export interface DeviceInfo {
@@ -28,6 +28,7 @@ export class Device {
   readonly _children: Record<string, Device>;
 
   constructor(id: string, info: Omit<DeviceInfo, 'homie'>, parent?: Device) {
+    validateId(id, 'device id');
     this.#info = { ...info, homie: '5.0' };
     this.#id = id;
     this._nodes = {};

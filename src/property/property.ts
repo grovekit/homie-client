@@ -3,6 +3,7 @@ import { Node } from "../node/node.js";
 import { HomieRootDevice } from "../device/root.js";
 import { AsyncLock } from "../asynclock.js";
 import { PropertyFormat } from "@grovekit/homie-core";
+import { validateId } from "../utils.js";
 
 export enum DATATYPE {
   INTEGER = "integer",
@@ -42,6 +43,7 @@ export abstract class Property<B, T extends B = B> {
   readonly #lock: AsyncLock;
 
   constructor(id: string, info: FullPropertyInfo, value: B, node: Node) {
+    validateId(id, 'property id');
     this.#id = id;
     this.#info = info;
     this._node = node;
