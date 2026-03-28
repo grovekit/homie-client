@@ -1,6 +1,7 @@
 
 import { Node } from "../node/node.js";
 import { DATATYPE, Property, PropertyInfo } from "./property.js";
+import { STRING } from "@grovekit/homie-core";
 
 export class StringProperty extends Property<string> {
 
@@ -9,11 +10,11 @@ export class StringProperty extends Property<string> {
   }
 
   _parse(raw: string) {
-    return raw;
+    return raw === STRING.EMPTY ? '' : raw;
   }
 
   _serialize(value: string) {
-    return value;
+    return value === '' ? STRING.EMPTY : value;
   }
 
   _validate(value: any): value is string {
