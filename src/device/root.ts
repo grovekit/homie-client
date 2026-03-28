@@ -40,10 +40,15 @@ export class HomieRootDevice extends Device {
   }
 
   override async $_init() {
+    // Publish init state for all devices so controllers know we're coming online
+    for (const device of this.#devices.values()) {
+      await device.setState(DEVICE_STATE.INIT, true);
+    }
+    // Subscribe to /set topics recursively
     await super.$_init();
-    await this.setState(DEVICE_STATE.READY, false);
-    for (const child of Object.values(this._children)) {
-      await child.setState(DEVICE_STATE.READY, false);
+    // Set state to READY without publishing — will be published in $_advertise()
+    for (const device of this.#devices.values()) {
+      await device.setState(DEVICE_STATE.READY, false);
     }
   }
 
