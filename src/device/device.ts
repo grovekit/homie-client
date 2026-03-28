@@ -10,9 +10,9 @@ export interface DeviceInfo {
   /** The version of the description document. Whenever the document changes, a new version must be assigned. This does not need to be sequential, eg. a timestamp or a random number could be used. */
   version: number;
   /** Friendly name of the device. Defaults to the ID of the device. */
-  name: string;
+  name?: string;
   /** Type of Device. Please ensure proper namespacing to prevent naming collisions. */
-  type: string;
+  type?: string;
 }
 
 
@@ -21,7 +21,7 @@ export class Device {
 
   readonly #id: string;
   readonly #info: DeviceInfo;
-  _nodes: Record<string, Node>;
+  readonly _nodes: Record<string, Node>;
   readonly #parent?: Device;
   readonly _root: HomieRootDevice;
   _state: DEVICE_STATE;
@@ -29,7 +29,7 @@ export class Device {
 
   constructor(id: string, info: Omit<DeviceInfo, 'homie'>, parent?: Device) {
     validateId(id, 'device id');
-    this.#info = { ...info, homie: '5.0' };
+    this.#info = { ...info, homie: '5.0', name: info.name ?? id };
     this.#id = id;
     this._nodes = {};
     this._state = DEVICE_STATE.INIT;

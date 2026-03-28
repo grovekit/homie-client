@@ -1,4 +1,3 @@
-
 import { Node } from "../node/node.js";
 import { HomieRootDevice } from "../device/root.js";
 import { AsyncLock } from "../asynclock.js";
@@ -19,16 +18,28 @@ export enum DATATYPE {
 
 export interface PropertyInfo {
   /** Friendly name of the Property. Defaults to the ID of the property. */
-  name: string;
-  /** Whether the Property is settable. */
-  settable: boolean;
-  /** Whether the Property is retained. */
-  retained: boolean;
+  name?: string;
+  /** Whether the Property is settable. Defaults to false. */
+  settable?: boolean;
+  /** Whether the Property is retained. Defaults to true. */
+  retained?: boolean;
   /** Unit of this property. See units. */
   unit?: string; // TODO: enum
 }
 
 export interface FullPropertyInfo extends PropertyInfo {
+  format?: string;
+  datatype: DATATYPE;
+}
+
+/**
+ * Resolved version of FullPropertyInfo with spec defaults applied.
+ */
+export interface ResolvedPropertyInfo {
+  name: string;
+  settable: boolean;
+  retained: boolean;
+  unit?: string;
   format?: string;
   datatype: DATATYPE;
 }
@@ -39,13 +50,18 @@ export abstract class Property<B, T extends B = B> {
   readonly #id: string;
   readonly _node: Node;
   readonly _root: HomieRootDevice;
-  readonly #info: FullPropertyInfo;
+  readonly #info: ResolvedPropertyInfo;
   readonly #lock: AsyncLock;
 
   constructor(id: string, info: FullPropertyInfo, value: B, node: Node) {
     validateId(id, 'property id');
     this.#id = id;
-    this.#info = info;
+    this.#info = {
+      ...info,
+      name: info.name ?? id,
+      settable: info.settable ?? false,
+      retained: info.retained ?? true,
+    };
     this._node = node;
     this._root = node._device._root;
     this.#lock = new AsyncLock();

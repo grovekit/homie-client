@@ -14,9 +14,9 @@ import { mapObjectValues } from "../utils.js";
 
 export interface NodeInfo {
   /** Friendly name of the Node. Defaults to the ID of the node. */
-  name: string;
+  name?: string;
   /** Type of Node. Please ensure proper namespacing to prevent naming collisions. */
-  type: string;
+  type?: string;
 }
 
 export class Node {
@@ -30,7 +30,7 @@ export class Node {
   constructor(id: string, info: NodeInfo, device: Device) {
     validateId(id, 'node id');
     this.#id = id;
-    this.#info = { ...info };
+    this.#info = { ...info, name: info.name ?? id };
     this._root = device._root;
     this._device = device;
     this._properties = Object.create(null);
