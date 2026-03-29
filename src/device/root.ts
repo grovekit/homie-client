@@ -10,12 +10,13 @@ export class HomieRootDevice extends Device {
 
   #prefix: string;
   #client: HomieClient;
-  #devices: Map<string, Device>;
+  #descendants: Map<string, Device>;
 
   constructor(id: string, info: Omit<DeviceInfo, 'homie'>, opts: HomieClientOpts, prefix?: string) {
     super(id, info);
+    this._setRoot(this);
     this.#prefix = prefix ?? 'homie';
-    this.#devices = new Map();
+    this.#descendants = new Map();
     this.#client = new HomieClient({
       ...opts,
       options: {
@@ -40,23 +41,25 @@ export class HomieRootDevice extends Device {
   }
 
   override async $_init() {
+    await this.setState(DEVICE_STATE.INIT, true);
     // Publish init state for all devices so controllers know we're coming online
-    for (const device of this.#devices.values()) {
+    for (const device of this.#descendants.values()) {
       await device.setState(DEVICE_STATE.INIT, true);
     }
     // Subscribe to /set topics recursively
     await super.$_init();
     // Set state to READY without publishing — will be published in $_advertise()
-    for (const device of this.#devices.values()) {
+    await this.setState(DEVICE_STATE.READY, false);
+    for (const device of this.#descendants.values()) {
       await device.setState(DEVICE_STATE.READY, false);
     }
   }
 
   _registerDevice(device: Device) {
-    if (this.#devices.has(device.id)) {
+    if (this.#descendants.has(device.id)) {
       throw new Error(`duplicate device ID "${device.id}"`);
     }
-    this.#devices.set(device.id, device);
+    this.#descendants.set(device.id, device);
   }
 
   _registerNode(node: Node) {
@@ -72,7 +75,7 @@ export class HomieRootDevice extends Device {
     if (value === STRING.NULL) {
       return;
     }
-    const device = this.#devices.get(parsed.device);
+    const device = this.#descendants.get(parsed.device);
     const property = device?._nodes[parsed.node]?._properties[parsed.property];
     if (property?.settable) {
       await property.$_handleSet(value);

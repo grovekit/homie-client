@@ -1,8 +1,9 @@
 
-import { HomieRootDevice } from './root.js';
+import { type HomieRootDevice } from './root.js';
 import { Node, NodeInfo } from '../node/node.js';
 import { mapObjectValues, validateId } from '../utils.js';
 import { DEVICE_STATE, LOG_LEVEL } from '@grovekit/homie-core';
+import assert from 'node:assert';
 
 export interface DeviceInfo {
   /** The implemented Homie convention version, without the “patch” level. So the format is "5.x", where the 'x' is the minor version. */
@@ -22,63 +23,84 @@ export class Device {
   readonly #id: string;
   readonly #info: DeviceInfo;
   readonly _nodes: Record<string, Node>;
-  readonly #parent?: Device;
-  readonly _root: HomieRootDevice;
+  #root?: HomieRootDevice;
+  #parent?: Device;
   _state: DEVICE_STATE;
   readonly _children: Record<string, Device>;
 
-  constructor(id: string, info: Omit<DeviceInfo, 'homie'>, parent?: Device) {
+  constructor(id: string, info: Omit<DeviceInfo, 'homie'>, root?: HomieRootDevice, parent?: Device) {
     validateId(id, 'device id');
     this.#info = { ...info, homie: '5.0', name: info.name ?? id };
     this.#id = id;
     this._nodes = {};
     this._state = DEVICE_STATE.INIT;
     this._children = {};
-    this._root = parent ? parent._root : (this as unknown as HomieRootDevice);
-    this.#parent = parent;
-    this._root._registerDevice(this);
+    if (root) {
+      this.#root = root;
+    }
+    if (parent) {
+      this.#parent = parent;
+    }
   }
 
   get id() {
     return this.#id;
   }
 
+  get root(): HomieRootDevice {
+    assert(this.#root, 'device has no root yet');
+    return this.#root;
+  }
+
+  get parent(): Device | undefined {
+    return this.#parent;
+  }
+
+  protected _setRoot(root: HomieRootDevice) {
+    assert(!this.#root, 'device already has a root');
+    this.#root = root;
+  }
+
   addNode(id: string, info: NodeInfo) {
+    assert(!this._nodes[id], `node with id '${id}' already exists`);
     const node = new Node(id, info, this);
     this._nodes[id] = node;
+    this.root._registerNode(node);
     return node;
   }
 
   addChild(id: string, info: Omit<DeviceInfo, 'homie'>) {
-    const child = new Device(id, info, this);
+    assert(!this._children[id], `child with id '${id}' already exists`);
+    const child = new Device(id, info, this.root, this);
     this._children[id] = child;
+    this.root._registerDevice(child);
     return child;
   }
 
   async publishAlert(alertId: string, message: string) {
-    return this._root._publishDeviceAlert(this, alertId, message)
+    return this.root._publishDeviceAlert(this, alertId, message)
   }
 
   async clearAlert(alertId: string) {
-    return this._root._clearDeviceAlert(this, alertId);
+    return this.root._clearDeviceAlert(this, alertId);
   }
 
   async log(level: LOG_LEVEL, message: string) {
-    return this._root._publishDeviceLog(this, level, message);
+    return this.root._publishDeviceLog(this, level, message);
   }
 
   async setState(state: DEVICE_STATE, publish: boolean = true) {
     this._state = state;
     if (publish) {
-      await this._root._publishDeviceState(this, state);
+      await this.root._publishDeviceState(this, state);
     }
   }
 
   $_getDescription() {
-    const isRoot = this._root as Device === this;
+    const isRoot = this.root as Device === this;
     return {
       ...this.#info,
-      root: isRoot ? undefined : this._root.id,
+      root: isRoot ? undefined : this.root.id,
       nodes: mapObjectValues(this._nodes, node => node.$_getDescription()),
       parent: this.#parent?.id,
       children: Object.keys(this._children),
@@ -96,14 +118,14 @@ export class Device {
   }
 
   async $_advertise() {
-    await this._root._publishDeviceDescription(this);
+    await this.root._publishDeviceDescription(this);
     for (const node of Object.values(this._nodes)) {
       await node.$_advertise();
     }
     for (const child of Object.values(this._children)) {
       await child.$_advertise();
     }
-    await this._root._publishDeviceState(this, this._state);
+    await this.root._publishDeviceState(this, this._state);
   }
 
 }

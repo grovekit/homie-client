@@ -10,6 +10,7 @@ import { FloatProperty, FloatFormat } from "../property/float.js";
 import { EnumProperty, EnumFormat } from "../property/enum.js";
 import { DatetimeProperty } from "../property/datetime.js";
 import { mapObjectValues } from "../utils.js";
+import assert from "node:assert";
 
 
 export interface NodeInfo {
@@ -23,7 +24,7 @@ export class Node {
 
   readonly #id: string;
   readonly #info: NodeInfo;
-  readonly _root: HomieRootDevice;
+  readonly #root: HomieRootDevice;
   readonly _device: Device;
   readonly _properties: Record<string, Property<any>> = {};
 
@@ -31,10 +32,9 @@ export class Node {
     validateId(id, 'node id');
     this.#id = id;
     this.#info = { ...info, name: info.name ?? id };
-    this._root = device._root;
+    this.#root = device.root;
     this._device = device;
     this._properties = Object.create(null);
-    device._root._registerNode(this);
   }
 
   get id() {
@@ -42,7 +42,9 @@ export class Node {
   }
 
   #addProperty(property: Property<any>) {
+    assert(!this._properties[property.id], `property with id '${property.id}' already exists`);
     this._properties[property.id] = property;
+    this.#root._registerProperty(property);
   }
 
   addIntegerProperty(id: string, info: PropertyInfo, value: number, format?: IntegerFormat) {

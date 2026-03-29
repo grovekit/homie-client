@@ -49,7 +49,7 @@ export abstract class Property<B, T extends B = B> {
   #value: T;
   readonly #id: string;
   readonly _node: Node;
-  readonly _root: HomieRootDevice;
+  readonly #root: HomieRootDevice;
   readonly #info: ResolvedPropertyInfo;
   readonly #lock: AsyncLock;
 
@@ -63,10 +63,9 @@ export abstract class Property<B, T extends B = B> {
       retained: info.retained ?? true,
     };
     this._node = node;
-    this._root = node._device._root;
+    this.#root = node._device.root;
     this.#lock = new AsyncLock();
     this.#value = value as T;
-    node._device._root._registerProperty(this);
     queueMicrotask(() => {
       if (!this._validate(value)) {
         throw new Error(`invalid initial value ${value} for property ${id}`);
@@ -101,11 +100,11 @@ export abstract class Property<B, T extends B = B> {
       return;
     }
     const raw = this._serialize(value)
-    await this._root._publishPropertyTarget(this, raw);
+    await this.#root._publishPropertyTarget(this, raw);
   }
 
   async clearTarget() {
-    await this._root._clearPropertyTarget(this);
+    await this.#root._clearPropertyTarget(this);
   }
 
   async setValue(value: B) {
@@ -122,7 +121,7 @@ export abstract class Property<B, T extends B = B> {
   #setValue = async (value: T) => {
     this.#value = value;
     const raw = this._serialize(value);
-    await this._root._publishPropertyValue(this, raw);
+    await this.#root._publishPropertyValue(this, raw);
   }
 
 
@@ -147,13 +146,13 @@ export abstract class Property<B, T extends B = B> {
 
   async $_init() {
     if (this.settable) {
-      await this._root._subscribePropertySet(this);
+      await this.#root._subscribePropertySet(this);
     }
   }
 
   async $_advertise() {
     const raw = this._serialize(this.value);
-    await this._root._publishPropertyValue(this, raw);
+    await this.#root._publishPropertyValue(this, raw);
   }
 
 };

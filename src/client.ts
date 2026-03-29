@@ -109,7 +109,7 @@ export class HomieClient {
 
   async #publish(params: PublishParameters) {
     await this.#client.publish(params);
-    send_debug('published to topic %s with qos %s', params.topic, params.qos);
+    send_debug('published to topic %s with qos %s and retain %s', params.topic, params.qos, !!params.retain);
   }
 
   async enableAutoDiscovery(prefix: string) {
