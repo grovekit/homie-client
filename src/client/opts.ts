@@ -62,7 +62,7 @@ export const clientOptsToConnectParameters = (opts: ClientOpts): ConnectParamete
       clientId: opts.client_id ?? `homie-${uid()}`,
       username: opts.username,
       password: typeof opts.password === 'string' ? Buffer.from(opts.password) : opts.password,
-      keepAlive: opts.keepAlive,
+      keepAlive: opts.keepAlive ?? 15_000,
       will,
     },
   };
