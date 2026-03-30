@@ -59,6 +59,7 @@ export class Client {
       this.#client.subscribe({
         subscriptions: Array.from(this.#subscriptions.entries()).map(([topic, qos]) => ({ topicFilter: topic, qos })),
       }).catch(this.onError);
+      this.#startReadingMessages();
       queueMicrotask(this.onConnected);
     };
 
@@ -68,9 +69,12 @@ export class Client {
     };
   }
 
-  async #startReadingMessages() {
-    if (!this.#reading) {
-      this.#reading = true;
+  #startReadingMessages() {
+    if (this.#reading) {
+      return;
+    }
+    this.#reading = true;
+    (async () => {
       while (this.#reading) {
         try {
           for await (const message of this.#client.messages()) {
@@ -82,7 +86,7 @@ export class Client {
           this.#reading = this.#client.connectionState === 'connected';
         }
       }
-    }
+    })();
   }
 
   async connect() {
