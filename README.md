@@ -225,15 +225,6 @@ for logging. Enable debug output with the `DEBUG` environment variable:
 ```sh
 # All homie-client debug output
 DEBUG=gk:homie:client* node your-app.js
-
-# Only sent messages
-DEBUG=gk:homie:client:send node your-app.js
-
-# Only received messages
-DEBUG=gk:homie:client:recv node your-app.js
-
-# Subscription activity
-DEBUG=gk:homie:client:subs node your-app.js
 ```
 
 ## Author
