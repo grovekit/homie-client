@@ -63,7 +63,8 @@ export class Client {
   #onConnected = (): void => {
     debug.mqtt('connected');
     this.#client.subscribe({
-      subscriptions: Array.from(this.#subscriptions.entries()).map(([topic, qos]) => ({ topicFilter: topic, qos })),
+      subscriptions: Array.from(this.#subscriptions.entries())
+        .map(([topic, qos]) => ({ topicFilter: topic, qos })),
     })
       .then(() => {
         this.#startReadingMessages();
@@ -117,9 +118,15 @@ export class Client {
     }
   }
 
-  async #publish(params: PublishParameters) {
-    await this.#client.publish(params);
-    debug.send('published to topic %s with qos %s and retain %s', params.topic, params.qos, !!params.retain);
+  async #publish(topic: string, payload: string, retain: boolean) {
+    const qos = retain ? 2 : 0;
+    await this.#client.publish({
+      topic,
+      payload: Buffer.from(payload),
+      qos,
+      retain,
+    });
+    debug.send('published to topic %s with qos %s and retain %s', topic, 0/*, qos*/, retain);
   }
 
   async enableAutoDiscovery(prefix: string) {
@@ -131,12 +138,7 @@ export class Client {
   }
 
   async publishDeviceInfo(parsed: DeviceInfoTopic, info: DeviceDescription) {
-    await this.#publish({
-      topic: TOPIC.stringify(parsed),
-      payload: Buffer.from(JSON.stringify(info)),
-      qos: 2,
-      retain: true,
-    });
+    await this.#publish(TOPIC.stringify(parsed), JSON.stringify(info), true);
   }
 
   async handleDeviceState(parsed: WithRaw<DeviceStateTopic>,  state: DEVICE_STATE) {
@@ -144,12 +146,7 @@ export class Client {
   }
 
   async publishDeviceState(parsed: DeviceStateTopic, state: DEVICE_STATE) {
-    await this.#publish({
-      topic: TOPIC.stringify(parsed),
-      payload: Buffer.from(state),
-      qos: 2,
-      retain: true,
-    });
+    await this.#publish(TOPIC.stringify(parsed), state, true);
   }
 
   async handleDeviceAlert(parsed: WithRaw<DeviceAlertTopic>, message: string) {
@@ -157,12 +154,7 @@ export class Client {
   }
 
   async publishDeviceAlert(parsed: DeviceAlertTopic, message: string) {
-    await this.#publish({
-      topic: TOPIC.stringify(parsed),
-      payload: Buffer.from(message),
-      qos: 2,
-      retain: true,
-    });
+    await this.#publish(TOPIC.stringify(parsed), message, true);
   }
 
   async handleDeviceLog(parsed: WithRaw<DeviceLogTopic>, message: string) {
@@ -170,12 +162,7 @@ export class Client {
   }
 
   async publishDeviceLog(parsed: DeviceLogTopic, message: string) {
-    await this.#publish({
-      topic: TOPIC.stringify(parsed),
-      payload: Buffer.from(message),
-      qos: 0,
-      retain: false,
-    });
+    await this.#publish(TOPIC.stringify(parsed), message, false);
   }
 
   async handlePropertyTarget(parsed: WithRaw<PropertyTargetTopic>, target: RawValue) {
@@ -183,12 +170,7 @@ export class Client {
   }
 
   async publishPropertyTarget(parsed: PropertyTargetTopic, value: RawValue) {
-    await this.#publish({
-      topic: TOPIC.stringify(parsed),
-      payload: Buffer.from(value),
-      qos: 2,
-      retain: true,
-    });
+    await this.#publish(TOPIC.stringify(parsed), value, true);
   }
 
   async subscribeToPropertyTarget(parsed: PropertyTargetTopic) {
@@ -199,13 +181,8 @@ export class Client {
 
   }
 
-  async publishPropertyValue(parsed: PropertyValueTopic, value: RawValue, retained: boolean = true) {
-    await this.#publish({
-      topic: TOPIC.stringify(parsed),
-      payload: Buffer.from(value),
-      qos: retained ? 2 : 0,
-      retain: retained,
-    });
+  async publishPropertyValue(parsed: PropertyValueTopic, value: RawValue, retain: boolean) {
+    await this.#publish(TOPIC.stringify(parsed), value, retain);
   }
 
   async subscribeToPropertyValue(parsed: PropertyValueTopic) {
@@ -216,13 +193,8 @@ export class Client {
 
   }
 
-  async publishPropertySet(parsed: PropertySetTopic, value: RawValue, retained: boolean = true) {
-    await this.#publish({
-      topic: TOPIC.stringify(parsed),
-      payload: Buffer.from(value),
-      qos: retained ? 2 : 0,
-      retain: false,
-    });
+  async publishPropertySet(parsed: PropertySetTopic, value: RawValue) {
+    await this.#publish(TOPIC.stringify(parsed), value, false);
   }
 
   async subscribeToPropertySet(parsed: PropertySetTopic) {

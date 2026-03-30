@@ -12,7 +12,7 @@ import { wait } from "../utils/utils.js";
 
   const opts = {
     url: new URL('mqtt://localhost:1884'),
-  };
+  } as const;
 
   const device = new RootDevice('thermostat-17', info, opts);
 
