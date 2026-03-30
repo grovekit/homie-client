@@ -26,7 +26,7 @@ application logic.
 The library is organized around four main concepts, mirroring the Homie
 convention's topology:
 
-- **`HomieRootDevice`** — the top-level device that owns the MQTT connection.
+- **`RootDevice`** — the top-level device that owns the MQTT connection.
   Every device tree has exactly one root device. It manages the connection
   lifecycle, the MQTT last will (LWT), and coordinates publishing for itself
   and all of its children.
@@ -66,9 +66,9 @@ The entry point is `HomieRootDevice`. You provide a device ID, device metadata,
 and MQTT connection options:
 
 ```ts
-import { HomieRootDevice } from '@grovekit/homie-client';
+import { RootDevice } from '@grovekit/homie-client';
 
-const device = new HomieRootDevice(
+const device = new RootDevice(
   'thermostat-17',                        // unique device ID
   { name: 'My Thermostat', type: 'thermostat', version: 1 },
   { url: 'mqtt://localhost:1883' },       // MQTT broker URL
@@ -224,7 +224,7 @@ for logging. Enable debug output with the `DEBUG` environment variable:
 
 ```sh
 # All homie-client debug output
-DEBUG=gk:homie:client* node your-app.js
+DEBUG=gk:homie:client:* node your-app.js
 
 # Only sent messages
 DEBUG=gk:homie:client:send node your-app.js
