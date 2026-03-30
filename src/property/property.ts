@@ -1,8 +1,8 @@
 import { Node } from "../node/node.js";
-import { HomieRootDevice } from "../device/root.js";
-import { AsyncLock } from "../asynclock.js";
+import { RootDevice } from "../device/root.js";
+import { AsyncLock } from "../utils/asynclock.js";
 import { PropertyFormat } from "@grovekit/homie-core";
-import { validateId } from "../utils.js";
+import { validateId } from "../utils/utils.js";
 
 export enum DATATYPE {
   INTEGER = "integer",
@@ -49,7 +49,7 @@ export abstract class Property<B, T extends B = B> {
   #value: T;
   readonly #id: string;
   readonly _node: Node;
-  readonly #root: HomieRootDevice;
+  readonly #root: RootDevice;
   readonly #info: ResolvedPropertyInfo;
   readonly #lock: AsyncLock;
 

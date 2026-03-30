@@ -1,13 +1,11 @@
 
-import { type HomieRootDevice } from './root.js';
+import { type RootDevice } from './root.js';
 import { Node, NodeInfo } from '../node/node.js';
-import { mapObjectValues, validateId } from '../utils.js';
+import { mapObjectValues, validateId } from '../utils/utils.js';
 import { DEVICE_STATE, LOG_LEVEL } from '@grovekit/homie-core';
 import assert from 'node:assert';
 
 export interface DeviceInfo {
-  /** The implemented Homie convention version, without the “patch” level. So the format is "5.x", where the 'x' is the minor version. */
-  homie: '5.0';
   /** The version of the description document. Whenever the document changes, a new version must be assigned. This does not need to be sequential, eg. a timestamp or a random number could be used. */
   version: number;
   /** Friendly name of the device. Defaults to the ID of the device. */
@@ -21,14 +19,14 @@ export interface DeviceInfo {
 export class Device {
 
   readonly #id: string;
-  readonly #info: DeviceInfo;
+  readonly #info: DeviceInfo & { homie: '5.0' };
   readonly _nodes: Record<string, Node>;
-  #root?: HomieRootDevice;
+  #root?: RootDevice;
   #parent?: Device;
   _state: DEVICE_STATE;
   readonly _children: Record<string, Device>;
 
-  constructor(id: string, info: Omit<DeviceInfo, 'homie'>, root?: HomieRootDevice, parent?: Device) {
+  constructor(id: string, info: DeviceInfo, root?: RootDevice, parent?: Device) {
     validateId(id, 'device id');
     this.#info = { ...info, homie: '5.0', name: info.name ?? id };
     this.#id = id;
@@ -47,7 +45,7 @@ export class Device {
     return this.#id;
   }
 
-  get root(): HomieRootDevice {
+  get root(): RootDevice {
     assert(this.#root, 'device has no root yet');
     return this.#root;
   }
@@ -56,7 +54,7 @@ export class Device {
     return this.#parent;
   }
 
-  protected _setRoot(root: HomieRootDevice) {
+  protected _setRoot(root: RootDevice) {
     assert(!this.#root, 'device already has a root');
     this.#root = root;
   }
@@ -69,7 +67,7 @@ export class Device {
     return node;
   }
 
-  addChild(id: string, info: Omit<DeviceInfo, 'homie'>) {
+  addChild(id: string, info: DeviceInfo) {
     assert(!this._children[id], `child with id '${id}' already exists`);
     const child = new Device(id, info, this.root, this);
     this._children[id] = child;

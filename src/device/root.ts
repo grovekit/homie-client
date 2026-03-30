@@ -3,21 +3,20 @@ import { Device, DeviceInfo } from './device.js';
 import { TOPIC, DEVICE_STATE, LOG_LEVEL, STRING, PropertySetTopic, RawValue } from '@grovekit/homie-core';
 import { Node } from '../node/node.js';
 import { Property } from '../property/property.js';
-import { HomieClient } from '../client.js';
-import { HomieClientOpts } from '../config.js';
+import { Client, ClientOpts } from '../client/client.js';
 
-export class HomieRootDevice extends Device {
+export class RootDevice extends Device {
 
   #prefix: string;
-  #client: HomieClient;
+  #client: Client;
   #descendants: Map<string, Device>;
 
-  constructor(id: string, info: Omit<DeviceInfo, 'homie'>, opts: HomieClientOpts, prefix?: string) {
+  constructor(id: string, info: DeviceInfo, opts: ClientOpts, prefix?: string) {
     super(id, info);
     this._setRoot(this);
     this.#prefix = prefix ?? 'homie';
     this.#descendants = new Map();
-    this.#client = new HomieClient({
+    this.#client = new Client({
       ...opts,
       options: {
         will: {
@@ -67,8 +66,7 @@ export class HomieRootDevice extends Device {
   }
 
   _registerProperty(property: Property<any>) {
-    // const device = property._node._device;
-    // this.#client.subscribeToPropertyValue({ type: 'property_value', device: device.id, prefix: this.#prefix, property: property.id, node: property._node.id });
+
   }
 
   #handlePropertySet = async (parsed: PropertySetTopic, value: RawValue) => {

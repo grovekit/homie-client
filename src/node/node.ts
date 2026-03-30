@@ -1,15 +1,15 @@
 
 import { Property, PropertyInfo } from "../property/property.js";
-import { HomieRootDevice } from "../device/root.js";
+import { RootDevice } from "../device/root.js";
 import { Device } from "../device/device.js";
-import { validateId } from "../utils.js";
+import { validateId } from "../utils/utils.js";
 import { BooleanProperty, BooleanFormat } from "../property/boolean.js";
 import { StringProperty } from "../property/string.js";
 import { IntegerProperty, IntegerFormat } from "../property/integer.js";
 import { FloatProperty, FloatFormat } from "../property/float.js";
 import { EnumProperty, EnumFormat } from "../property/enum.js";
 import { DatetimeProperty } from "../property/datetime.js";
-import { mapObjectValues } from "../utils.js";
+import { mapObjectValues } from "../utils/utils.js";
 import assert from "node:assert";
 
 
@@ -24,7 +24,7 @@ export class Node {
 
   readonly #id: string;
   readonly #info: NodeInfo;
-  readonly #root: HomieRootDevice;
+  readonly #root: RootDevice;
   readonly _device: Device;
   readonly _properties: Record<string, Property<any>> = {};
 

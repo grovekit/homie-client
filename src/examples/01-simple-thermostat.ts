@@ -1,5 +1,5 @@
 
-import { HomieRootDevice } from "../device/root.js";
+import { RootDevice } from "../device/root.js";
 
 (async () => {
 
@@ -10,10 +10,10 @@ import { HomieRootDevice } from "../device/root.js";
   };
 
   const opts = {
-    url: 'mqtt://localhost:1884',
+    url: new URL('mqtt://localhost:1884'),
   };
 
-  const device = new HomieRootDevice('thermostat-17', info, opts);
+  const device = new RootDevice('thermostat-17', info, opts);
 
   const node = device.addNode('main', { name: 'Main Node', type: 'Generic Node' });
 
