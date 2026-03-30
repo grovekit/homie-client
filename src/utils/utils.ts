@@ -46,3 +46,17 @@ export class Counter {
   }
 
 }
+
+export const errToString = (err: Error | any, hide_stack?: boolean): string => {
+  if (err instanceof Error) {
+    return hide_stack ? err.message : (err.stack ?? err.message);
+  }
+  if (typeof err === 'object' && err !== 'null') {
+    return Object.prototype.toString.call(err.message ?? err);
+  }
+  return Object.prototype.toString.call(err);
+};
+
+export const wait = (delay: number) => {
+  return new Promise((resolve) => setTimeout(resolve, delay));
+};

@@ -1,5 +1,6 @@
 
 import { RootDevice } from "../device/root.js";
+import { wait } from "../utils/utils.js";
 
 (async () => {
 
@@ -36,7 +37,8 @@ import { RootDevice } from "../device/root.js";
     // blocking the MQTT client.
     queueMicrotask(async () => {
       for (let i = 0; i < 5; i += 1) {
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        await wait(1000);
+        console.log('setting value...');
         await temperature.setValue(temperature.value + (delta / 5));
       }
       await temperature.clearTarget();

@@ -3,62 +3,82 @@ import { Device, DeviceInfo } from './device.js';
 import { TOPIC, DEVICE_STATE, LOG_LEVEL, STRING, PropertySetTopic, RawValue } from '@grovekit/homie-core';
 import { Node } from '../node/node.js';
 import { Property } from '../property/property.js';
-import { Client, ClientOpts } from '../client/client.js';
+import { Client } from '../client/client.js';
+import { type ClientOpts } from '../client/opts.js';
 
 export class RootDevice extends Device {
 
   #prefix: string;
   #client: Client;
-  #descendants: Map<string, Device>;
+  #devices: Map<string, Device>;
 
   constructor(id: string, info: DeviceInfo, opts: ClientOpts, prefix?: string) {
     super(id, info);
     this._setRoot(this);
     this.#prefix = prefix ?? 'homie';
-    this.#descendants = new Map();
+    this.#devices = new Map();
     this.#client = new Client({
       ...opts,
-      options: {
-        will: {
-          topic: TOPIC.stringify({ type: 'device_state', prefix: this.#prefix, device: this.id }),
-          payload: Buffer.from('lost'),
-          qos: 2,
-          retain: true,
-        },
-        protocolLevel: 3,
+      will: {
+        topic: TOPIC.stringify({ type: 'device_state', prefix: this.#prefix, device: this.id }),
+        payload: DEVICE_STATE.LOST,
+        qos: 2,
+        retain: true,
       },
     });
 
-    this.#client.onConnected = () => {
-      this.$_init()
-        .then(() => this.$_advertise())
-        .catch(console.error);
-    };
+    this.#client.onError = this.#onError;
+    this.#client.onConnected = this.#onConnected;
+    this.#client.onDisconnected = this.#onDisconnected;
 
     this.#client.handlePropertySet = this.#handlePropertySet;
 
+    this._registerDevice(this);
   }
 
+  onError = (err: Error): void => {
+    console.error(err);
+    process.exit(1);
+  };
+
+  #onError = (err: Error): void => {
+    this.onError(err);
+  };
+
+  onConnected = (): void => { };
+
+  #onConnected = (): void => {
+    this.$_init()
+      .then(() => this.$_advertise())
+      .then(() => this.onConnected())
+      .catch((err) => this.#onError(err));
+  };
+
+  onDisconnected = (): void => { };
+
+  #onDisconnected = (): void => {
+    queueMicrotask(this.onDisconnected);
+  };
+
+
   override async $_init() {
-    await this.setState(DEVICE_STATE.INIT, true);
     // Publish init state for all devices so controllers know we're coming online
-    for (const device of this.#descendants.values()) {
+    for (const device of this.#devices.values()) {
       await device.setState(DEVICE_STATE.INIT, true);
     }
     // Subscribe to /set topics recursively
     await super.$_init();
     // Set state to READY without publishing — will be published in $_advertise()
-    await this.setState(DEVICE_STATE.READY, false);
-    for (const device of this.#descendants.values()) {
+    for (const device of this.#devices.values()) {
       await device.setState(DEVICE_STATE.READY, false);
     }
   }
 
   _registerDevice(device: Device) {
-    if (this.#descendants.has(device.id)) {
+    if (this.#devices.has(device.id)) {
       throw new Error(`duplicate device ID "${device.id}"`);
     }
-    this.#descendants.set(device.id, device);
+    this.#devices.set(device.id, device);
   }
 
   _registerNode(node: Node) {
@@ -73,8 +93,10 @@ export class RootDevice extends Device {
     if (value === STRING.NULL) {
       return;
     }
-    const device = this.#descendants.get(parsed.device);
+    const device = this.#devices.get(parsed.device);
+    console.log('device', device, parsed);
     const property = device?._nodes[parsed.node]?._properties[parsed.property];
+    console.log('property', property, property?.settable);
     if (property?.settable) {
       await property.$_handleSet(value);
     }

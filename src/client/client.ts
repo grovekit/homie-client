@@ -21,53 +21,63 @@ import { ConnectParameters, PublishParameters, SubscribeParameters } from '@seri
 import { PublishPacket } from '@seriousme/opifex/mqttPacket';
 
 import { is } from '@deepkit/type';
-import { Counter } from '../utils/utils.js';
+import { Counter, errToString } from '../utils/utils.js';
 
 import * as debug from '../utils/debug.js';
+import { ClientOpts, clientOptsToConnectParameters } from './opts.js';
 
 type OpifexTopicFilter = SubscribeParameters['subscriptions'][number]['topicFilter'];
 type OpifexTopicQoS = SubscribeParameters['subscriptions'][number]['qos'];
 
-export interface ClientOpts extends Omit<ConnectParameters, 'url'> {
-  url: URL;
-}
-
 export class Client {
 
-  #opts: ConnectParameters;
+  #parameters: ConnectParameters;
   #client: TcpClient;
   #reading: boolean;
   #msg_counter: Counter;
   #subscriptions: Map<OpifexTopicFilter, OpifexTopicQoS>;
 
-  onError: (err: Error) => void;
-  onConnected: () => void;
-  onDisconnected: () => void;
-
   constructor(opts: ClientOpts) {
-    this.#opts = { ...opts };
+    this.#parameters = clientOptsToConnectParameters(opts);
     this.#client = new TcpClient();
     this.#reading = false;
     this.#msg_counter = new Counter();
     this.#subscriptions = new Map();
-    this.onError = () => { };
-    this.onConnected = () => { };
-    this.onDisconnected = () => { };
-
-    this.#client.onConnected = () => {
-      debug.mqtt('connected');
-      this.#client.subscribe({
-        subscriptions: Array.from(this.#subscriptions.entries()).map(([topic, qos]) => ({ topicFilter: topic, qos })),
-      }).catch(this.onError);
-      this.#startReadingMessages();
-      queueMicrotask(this.onConnected);
-    };
-
-    this.#client.onDisconnected = () => {
-      debug.mqtt('disconnected');
-      queueMicrotask(this.onDisconnected);
-    };
+    this.#client.onError = this.#onError;
+    this.#client.onConnected = this.#onConnected;
+    this.#client.onDisconnected = this.#onDisconnected;
   }
+
+  onError = (err: Error): void => {
+    console.error(err);
+    process.exit(1);
+  };
+
+  #onError = (err: Error): void => {
+    debug.mqtt('error: %s', errToString(err));
+    this.onError(err);
+  };
+
+  onConnected = (): void => {};
+
+  #onConnected = (): void => {
+    debug.mqtt('connected');
+    this.#client.subscribe({
+      subscriptions: Array.from(this.#subscriptions.entries()).map(([topic, qos]) => ({ topicFilter: topic, qos })),
+    })
+      .then(() => {
+        this.#startReadingMessages();
+        this.onConnected();
+      })
+      .catch((err) => this.#onError(err));
+  };
+
+  onDisconnected = (): void => {};
+
+  #onDisconnected = (): void => {
+    debug.mqtt('disconnected');
+    this.onDisconnected();
+  };
 
   #startReadingMessages() {
     if (this.#reading) {
@@ -81,7 +91,7 @@ export class Client {
             await this.#handleMessage(message);
           }
         } catch (err) {
-          this.onError(err as any);
+          this.#onError(err as any);
         } finally {
           this.#reading = this.#client.connectionState === 'connected';
         }
@@ -90,8 +100,7 @@ export class Client {
   }
 
   async connect() {
-    await this.#client.connect(this.#opts);
-    this.#startReadingMessages();
+    await this.#client.connect(this.#parameters);
   }
 
   async disconnect() {
@@ -238,35 +247,35 @@ export class Client {
           const wildcard_topic = getDeviceWildcardTopic(parsed_topic);
           await this.#subscribe(wildcard_topic);
           await this.handleDeviceState(parsed_topic, payload)
-            .catch(this.onError);
+            .catch(this.#onError);
         }
       } break;
       case 'device_info': {
         const parsed_payload = JSON.parse(payload);
         if (is<DeviceDescription>(parsed_payload)) {
           await this.handleDeviceInfo(parsed_topic, parsed_payload)
-            .catch(this.onError);
+            .catch(this.#onError);
         }
       } break;
       case 'device_log': {
         await this.handleDeviceLog(parsed_topic, payload)
-          .catch(this.onError);
+          .catch(this.#onError);
       } break;
       case 'device_alert': {
         await this.handleDeviceAlert(parsed_topic, payload)
-          .catch(this.onError);
+          .catch(this.#onError);
       } break;
       case 'property_target': {
         await this.handlePropertyTarget(parsed_topic, payload as RawValue)
-          .catch(this.onError);
+          .catch(this.#onError);
       } break;
       case 'property_set': {
         await this.handlePropertySet(parsed_topic, payload as RawValue)
-          .catch(this.onError);
+          .catch(this.#onError);
       } break;
       case 'property_value': {
         await this.handlePropertyValue(parsed_topic, payload as RawValue)
-          .catch(this.onError);
+          .catch(this.#onError);
       } break;
     }
     debug.recv('msg %s: message handling completed', packet_id);

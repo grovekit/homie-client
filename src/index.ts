@@ -13,6 +13,10 @@ export {
 } from './client/client.js';
 
 export {
+  ClientOpts,
+} from './client/opts.js';
+
+export {
   Node,
 } from './node/node.js';
 

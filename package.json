@@ -26,14 +26,14 @@
   "dependencies": {
     "@deepkit/type": "^1.0.19",
     "@grovekit/homie-core": "^0.0.1-alpha.4",
-    "@seriousme/opifex": "^1.11.1",
+    "@seriousme/opifex": "^1.11.2",
     "debug": "^4.4.3"
   },
   "devDependencies": {
     "@deepkit/type-compiler": "^1.0.19",
-    "@types/debug": "^4.1.12",
-    "@types/node": "^24.7.2",
-    "typescript": "^5.9.3"
+    "@types/debug": "^4.1.13",
+    "@types/node": "^25.5.0",
+    "typescript": "^6.0.2"
   },
   "files": [
     "dist/**/*.js",
