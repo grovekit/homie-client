@@ -59,7 +59,7 @@ export const clientOptsToConnectParameters = (opts: ClientOpts): ConnectParamete
     key: opts.key,
     numberOfRetries: opts.numberOfRetries,
     options: {
-      protocolLevel: opts.version ? mqttVersionToProtocolLevel(opts.version) : 4,
+      protocolLevel: opts.version ? mqttVersionToProtocolLevel(opts.version) : 3,
       clientId: opts.client_id ?? `homie-${uid()}`,
       username: opts.username,
       password: typeof opts.password === 'string' ? Buffer.from(opts.password) : opts.password,
