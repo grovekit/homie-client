@@ -115,6 +115,7 @@ export class Client {
     const new_subs: { topicFilter: string; qos: 0 | 1 | 2 }[] = [];
     for (const { topic, qos } of filters) {
       if (this.#subscriptions.get(topic) !== qos || force) {
+        this.#subscriptions.set(topic, qos);
         new_subs.push({ topicFilter: topic, qos });
         debug.subs('subscribing to topic %s with qos %s', topic, qos);
       } else {
