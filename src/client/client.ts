@@ -62,10 +62,9 @@ export class Client {
 
   #onConnected = (): void => {
     debug.mqtt('connected');
-    this.#client.subscribe({
-      subscriptions: Array.from(this.#subscriptions.entries())
-        .map(([topic, qos]) => ({ topicFilter: topic, qos })),
-    })
+    const subs = Array.from(this.#subscriptions.entries())
+      .map(([topic, qos]) => ({ topic, qos }));
+    this.#multiSubscribe(subs, true)
       .then(() => {
         this.#startReadingMessages();
         this.onConnected();
@@ -108,14 +107,21 @@ export class Client {
     await this.#client.disconnect();
   }
 
-  async #subscribe(topic: string, qos: 0 | 1 | 2 = 0) {
-    if (this.#subscriptions.get(topic) !== qos) {
-      this.#subscriptions.set(topic, qos);
-      await this.#client.subscribe({ subscriptions: [{ topicFilter: topic, qos }] });
-      debug.subs('subscribed to topic %s with qos %s', topic, qos);
-    } else {
-      debug.subs('already subscribed to topic %s with qos %s', topic, qos);
+  async #subscribe(topic: string, qos?: 0 | 1 | 2) {
+    await this.#multiSubscribe([{ topic, qos: qos ?? 0 }]);
+  }
+
+  async #multiSubscribe(filters: { topic: string; qos: 0 | 1 | 2 }[], force?: boolean) {
+    const new_subs: { topicFilter: string; qos: 0 | 1 | 2 }[] = [];
+    for (const { topic, qos } of filters) {
+      if (this.#subscriptions.get(topic) !== qos || force) {
+        new_subs.push({ topicFilter: topic, qos });
+        debug.subs('subscribing to topic %s with qos %s', topic, qos);
+      } else {
+        debug.subs('already subscribed to topic %s with qos %s', topic, qos);
+      }
     }
+    await this.#client.subscribe({ subscriptions: new_subs });
   }
 
   async #publish(topic: string, payload: string, retain: boolean) {
@@ -129,8 +135,10 @@ export class Client {
     debug.send('published to topic %s with qos %s and retain %s', topic, 0/*, qos*/, retain);
   }
 
-  async enableAutoDiscovery(prefix: string) {
-    await this.#subscribe(getAutodiscoveryTopic(prefix));
+  async enableAutoDiscovery(prefix: string | string[]) {
+    prefix = Array.isArray(prefix) ? prefix : [prefix];
+    const subs = prefix.map(p => ({ topic: getAutodiscoveryTopic(p), qos: 2 } as const));
+    await this.#multiSubscribe(subs);
   }
 
   async handleDeviceInfo(parsed: WithRaw<DeviceInfoTopic>,  info: DeviceDescription) {
