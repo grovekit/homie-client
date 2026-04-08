@@ -3,6 +3,32 @@
 A library for publishing and interacting with devices implementing
 the [Homie v5 MQTT convention][homie-spec]. Part of [GroveKit].
 
+## Table of Contents
+
+- [Status](#status)
+- [Installation](#installation)
+- [Overview](#overview)
+  - [Architecture](#architecture)
+  - [Property types](#property-types)
+- [Publishing Devices](#publishing-devices)
+  - [Creating a device](#creating-a-device)
+  - [Adding nodes and properties](#adding-nodes-and-properties)
+  - [Handling commands](#handling-commands)
+  - [Publishing values](#publishing-values)
+  - [Child devices](#child-devices)
+  - [Alerts and logging](#alerts-and-logging)
+  - [Going online](#going-online)
+- [Consuming Devices](#consuming-devices)
+  - [Creating a client](#creating-a-client)
+  - [Enabling auto-discovery](#enabling-auto-discovery)
+  - [Handling device events](#handling-device-events)
+  - [Sending commands to devices](#sending-commands-to-devices)
+  - [Client lifecycle callbacks](#client-lifecycle-callbacks)
+- [Examples](#examples)
+- [Debugging](#debugging)
+- [Author](#author)
+- [License](#license)
+
 ## Status
 
 Currently in development, pre-alpha state.
@@ -20,6 +46,13 @@ npm install @grovekit/homie-client
 lifecycle — connection, discovery, description publishing, property
 advertisement, and command handling — so that you can focus on your device's
 application logic.
+
+The library supports two primary use cases:
+
+- **Publishing devices** — Creating Homie-compliant devices that expose
+  properties and respond to commands from controllers.
+- **Consuming devices** — Building controllers or dashboards that discover
+  devices, monitor their state, and send commands.
 
 ### Architecture
 
@@ -45,20 +78,13 @@ convention's topology:
   **non-retained** (for momentary events), and **settable** or
   **read-only**. Each property type maps to a Homie datatype.
 
-### Property types
+For consuming devices, there is also:
 
-| Class               | Homie datatype | TypeScript type |
-|---------------------|----------------|-----------------|
-| `IntegerProperty`   | `integer`      | `number`        |
-| `FloatProperty`     | `float`        | `number`        |
-| `BooleanProperty`   | `boolean`      | `boolean`       |
-| `StringProperty`    | `string`       | `string`        |
-| `EnumProperty`      | `enum`         | `string`        |
-| `DatetimeProperty`  | `datetime`     | `Date`          |
+- **`Client`** — a low-level MQTT client for discovering and interacting with
+  Homie devices. It handles auto-discovery, topic parsing, and provides hooks
+  for reacting to device state changes, property updates, alerts, and logs.
 
-Color, duration, and JSON property types are not yet implemented.
-
-## Usage
+## Publishing Devices
 
 ### Creating a device
 
@@ -208,6 +234,211 @@ This will:
    settable properties).
 3. Publish the description document, all property values, and finally
    `$state = ready` for each device in the tree.
+
+## Consuming Devices
+
+The `Client` class provides a low-level interface for building Homie
+controllers, dashboards, or any application that needs to discover and
+interact with Homie devices on the network.
+
+### Creating a client
+
+Create a `Client` instance with MQTT connection options:
+
+```ts
+import { Client, ClientOpts } from '@grovekit/homie-client';
+
+const opts: ClientOpts = {
+  url: new URL('mqtt://localhost:1883'),
+  client_id: 'my-controller',           // optional, auto-generated if omitted
+  username: 'user',                     // optional
+  password: 'pass',                     // optional
+  version: 5,                           // MQTT version: 3 or 5
+  keepAlive: 15_000,                    // optional, in milliseconds
+};
+
+const client = new Client(opts);
+```
+
+### Enabling auto-discovery
+
+To discover devices on the network, enable auto-discovery for one or more
+Homie topic prefixes. The Homie convention uses `homie` as the default prefix:
+
+```ts
+await client.connect();
+await client.enableAutoDiscovery('homie');
+
+// Or discover devices under multiple prefixes:
+await client.enableAutoDiscovery(['homie', 'my-prefix']);
+```
+
+When auto-discovery is enabled, the client subscribes to the appropriate
+wildcard topics and automatically subscribes to all topics under a device's
+subtree when it detects a device's `$state` message.
+
+### Handling device events
+
+The `Client` class uses overridable handler methods to react to incoming
+messages. Override these methods to implement your application logic:
+
+#### Device state changes
+
+Called when a device's `$state` changes (e.g., `init`, `ready`, `lost`,
+`sleeping`, `alert`):
+
+```ts
+client.handleDeviceState = async (topic, state) => {
+  console.log(`Device ${topic.device} is now ${state}`);
+  // topic.prefix - the Homie prefix (e.g., 'homie')
+  // topic.device - the device ID
+  // topic.raw    - the raw topic string
+};
+```
+
+#### Device description
+
+Called when a device publishes its description document (the `$description`
+topic containing device metadata, nodes, and properties):
+
+```ts
+client.handleDeviceInfo = async (topic, info) => {
+  console.log(`Discovered device: ${info.name}`);
+  console.log(`  Type: ${info.type}`);
+  console.log(`  Nodes: ${Object.keys(info.nodes ?? {}).join(', ')}`);
+  // info contains the full DeviceDescription object
+};
+```
+
+#### Property values
+
+Called when a property value is published:
+
+```ts
+client.handlePropertyValue = async (topic, value) => {
+  console.log(`${topic.device}/${topic.node}/${topic.property} = ${value}`);
+  // topic.prefix   - the Homie prefix
+  // topic.device   - the device ID
+  // topic.node     - the node ID
+  // topic.property - the property ID
+  // value          - the raw string value
+};
+```
+
+#### Property targets
+
+Called when a property's target value changes (for properties that support
+gradual transitions):
+
+```ts
+client.handlePropertyTarget = async (topic, target) => {
+  console.log(`${topic.property} target set to ${target}`);
+};
+```
+
+#### Property set commands
+
+Called when a `/set` command is published (useful for monitoring or proxying):
+
+```ts
+client.handlePropertySet = async (topic, value) => {
+  console.log(`Set command: ${topic.property} -> ${value}`);
+};
+```
+
+#### Device alerts
+
+Called when a device publishes an alert:
+
+```ts
+client.handleDeviceAlert = async (topic, message) => {
+  console.log(`Alert from ${topic.device} [${topic.alert}]: ${message}`);
+};
+```
+
+#### Device logs
+
+Called when a device publishes a log message:
+
+```ts
+client.handleDeviceLog = async (topic, message) => {
+  console.log(`Log from ${topic.device} [${topic.level}]: ${message}`);
+  // topic.level - the log level (debug, info, warn, error, fatal)
+};
+```
+
+### Sending commands to devices
+
+To control a device, publish to its property's `/set` topic:
+
+```ts
+// Send a command to set a property value
+await client.publishPropertySet(
+  { prefix: 'homie', device: 'thermostat-17', node: 'main', property: 'temp' },
+  '25.0'
+);
+```
+
+### Client lifecycle callbacks
+
+The client provides callbacks for connection lifecycle events:
+
+```ts
+// Called when the client connects to the broker
+client.onConnected = () => {
+  console.log('Connected to MQTT broker');
+};
+
+// Called when the client disconnects
+client.onDisconnected = () => {
+  console.log('Disconnected from MQTT broker');
+};
+
+// Called on errors (default: logs and exits)
+client.onError = (err) => {
+  console.error('MQTT error:', err);
+  // Handle error appropriately for your application
+};
+```
+
+### Complete consumer example
+
+```ts
+import { Client } from '@grovekit/homie-client';
+
+const client = new Client({
+  url: new URL('mqtt://localhost:1883'),
+});
+
+// Track discovered devices
+const devices = new Map();
+
+client.handleDeviceState = async (topic, state) => {
+  if (state === 'ready') {
+    console.log(`Device ${topic.device} is online`);
+  } else if (state === 'lost') {
+    console.log(`Device ${topic.device} went offline`);
+    devices.delete(topic.device);
+  }
+};
+
+client.handleDeviceInfo = async (topic, info) => {
+  devices.set(topic.device, info);
+  console.log(`Discovered: ${info.name} (${info.type})`);
+};
+
+client.handlePropertyValue = async (topic, value) => {
+  console.log(`${topic.device}/${topic.node}/${topic.property} = ${value}`);
+};
+
+client.onConnected = async () => {
+  console.log('Connected! Discovering devices...');
+};
+
+// Start the client
+await client.connect();
+await client.enableAutoDiscovery('homie');
+```
 
 ## Examples
 
