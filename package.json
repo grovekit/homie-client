@@ -25,7 +25,7 @@
   },
   "dependencies": {
     "@runtyped/type": "^1.0.20",
-    "@grovekit/homie-core": "^0.0.1-alpha.4",
+    "@grovekit/homie-core": "^0.1.0",
     "@seriousme/opifex": "^1.11.2",
     "debug": "^4.4.3"
   },
