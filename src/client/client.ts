@@ -20,7 +20,7 @@ import { TcpClient } from '@seriousme/opifex/tcpClient';
 import { ConnectParameters, PublishParameters, SubscribeParameters } from '@seriousme/opifex/client';
 import { PublishPacket } from '@seriousme/opifex/mqttPacket';
 
-import { is } from '@deepkit/type';
+import { is } from '@runtyped/type';
 import { Counter, errToString } from '../utils/utils.js';
 
 import * as debug from '../utils/debug.js';

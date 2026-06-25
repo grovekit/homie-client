@@ -25,6 +25,7 @@ the [Homie v5 MQTT convention][homie-spec]. Part of [GroveKit].
   - [Sending commands to devices](#sending-commands-to-devices)
   - [Client lifecycle callbacks](#client-lifecycle-callbacks)
 - [Examples](#examples)
+- [Building](#building)
 - [Debugging](#debugging)
 - [Author](#author)
 - [License](#license)
@@ -447,6 +448,14 @@ See the [examples directory](./src/examples) for runnable examples:
 - **[01-simple-thermostat.ts](./src/examples/01-simple-thermostat.ts)** —
   a minimal thermostat device with a settable temperature property that
   simulates gradual state changes using the `$target` mechanism.
+
+## Building
+
+```sh
+npm install
+npx runtyped-install-transformer
+npm run build
+```
 
 ## Debugging
 
